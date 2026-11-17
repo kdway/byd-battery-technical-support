@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BYD Battery-Box Academy</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { colors: {
+    byd: { DEFAULT: '#00A651', dark: '#007A3D', light: '#E6F7EE' }
+  }}}
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family:'Inter',system-ui,sans-serif; }
+  .fade-in { animation: fadeIn .35s ease-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes led { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .led-blink { animation: led 1s infinite; }
+  ::-webkit-scrollbar{width:8px}
+  ::-webkit-scrollbar-thumb{background:#00A651;border-radius:4px}
+  details>summary{list-style:none}
+  details>summary::-webkit-details-marker{display:none}
+  .lang-active { background:#00A651 !important; color:white !important; }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   i18n — FR / EN / DE
+   ============================================================ */
+const I18N = {
+  fr: {
+    tagline:'HVS · HVM — Formation', hero_title:'BYD Battery-Box Academy',
+    hero_desc:'Maîtrisez le fonctionnement, le choix, l\'installation et le diagnostic des batteries BYD. 5 modules interactifs, 50 questions, validés à 80 % minimum.',
+    stat_validated:'Modules validés', stat_progress:'Progression', stat_questions:'Questions', stat_correct:'Réussies',
+    certified:'Certification obtenue !', certified_desc:'Vous avez validé tous les modules (≥ 80 %). Félicitations.',
+    modules_title:'Les 5 modules', reset:'↻ Réinitialiser ma progression', reset_confirm:'Réinitialiser toute votre progression ?',
+    back_home:"← Retour à l'accueil", tab_course:'📖 Cours', tab_quiz:'✍️ QCM', go_quiz:'Passer au QCM →',
+    question:'Question', validate:'Valider', next:'Suivant →', see_result:'Voir résultat',
+    congrats:'Félicitations !', almost:'Presque...', score:'Score', need80:'Il faut au moins 80 % pour valider ce module.',
+    module_ok:'Module validé (≥ 80 %).', restart:'↻ Recommencer', finish:'Terminer', last_score:'Dernier',
+    good_answer:'✅ Bonne réponse', correct_answer:'❌ Réponse correcte',
+    disclaimer:'⚠️ Application pédagogique non officielle, basée sur le « BYD Battery-Box Premium HVS/HVM Service-Leitfaden v1.5 ». Ne remplace pas la formation électricien ni le manuel officiel BYD.',
+    footer:'Usage pédagogique · v2.0', validated:'✓ Validé', error_label:'Erreur', action_label:'Solution pratique'
+  },
+  en: {
+    tagline:'HVS · HVM — Training', hero_title:'BYD Battery-Box Academy',
+    hero_desc:'Master the operation, selection, installation and diagnostics of BYD batteries. 5 interactive modules, 50 questions, validated at 80% minimum.',
+    stat_validated:'Validated modules', stat_progress:'Progress', stat_questions:'Questions', stat_correct:'Correct',
+    certified:'Certification obtained!', certified_desc:'You validated all modules (≥ 80%). Congratulations.',
+    modules_title:'The 5 modules', reset:'↻ Reset my progress', reset_confirm:'Reset all your progress?',
+    back_home:'← Back to home', tab_course:'📖 Course', tab_quiz:'✍️ Quiz', go_quiz:'Go to Quiz →',
+    question:'Question', validate:'Submit', next:'Next →', see_result:'See result',
+    congrats:'Congratulations!', almost:'Almost...', score:'Score', need80:'You need at least 80% to validate this module.',
+    module_ok:'Module validated (≥ 80%).', restart:'↻ Restart', finish:'Finish', last_score:'Last',
+    good_answer:'✅ Correct answer', correct_answer:'❌ Correct answer',
+    disclaimer:'⚠️ Unofficial educational app, based on the "BYD Battery-Box Premium HVS/HVM Service-Leitfaden v1.5". Does not replace electrician training or the official BYD manual.',
+    footer:'Educational use · v2.0', validated:'✓ Validated', error_label:'Error', action_label:'Practical solution'
+  },
+  de: {
+    tagline:'HVS · HVM — Schulung', hero_title:'BYD Battery-Box Academy',
+    hero_desc:'Meistern Sie Funktion, Auswahl, Installation und Diagnose von BYD-Batterien. 5 interaktive Module, 50 Fragen, bestanden ab 80 %.',
+    stat_validated:'Validierte Module', stat_progress:'Fortschritt', stat_questions:'Fragen', stat_correct:'Richtig',
+    certified:'Zertifizierung erhalten!', certified_desc:'Sie haben alle Module validiert (≥ 80 %). Herzlichen Glückwunsch.',
+    modules_title:'Die 5 Module', reset:'↻ Fortschritt zurücksetzen', reset_confirm:'Gesamten Fortschritt zurücksetzen?',
+    back_home:'← Zurück zur Startseite', tab_course:'📖 Kurs', tab_quiz:'✍️ Quiz', go_quiz:'Zum Quiz →',
+    question:'Frage', validate:'Bestätigen', next:'Weiter →', see_result:'Ergebnis ansehen',
+    congrats:'Herzlichen Glückwunsch!', almost:'Fast geschafft...', score:'Ergebnis', need80:'Mindestens 80 % zum Bestehen erforderlich.',
+    module_ok:'Modul bestanden (≥ 80 %).', restart:'↻ Neu starten', finish:'Beenden', last_score:'Letztes',
+    good_answer:'✅ Richtige Antwort', correct_answer:'❌ Richtige Antwort',
+    disclaimer:'⚠️ Inoffizielle Schulungs-App, basierend auf dem „BYD Battery-Box Premium HVS/HVM Service-Leitfaden v1.5". Ersetzt nicht die Elektriker-Ausbildung oder das offizielle BYD-Handbuch.',
+    footer:'Schulungszweck · v2.0', validated:'✓ Bestanden', error_label:'Fehler', action_label:'Praktische Lösung'
+  }
+};
+
+/* ============================================================
+   DONNÉES MULTILINGUES
+   ============================================================ */
+const MODULES = [
+/* ==================== MODULE 1 ==================== */
+{
+  id:'m1', icon:'⚡', color:'from-emerald-500 to-teal-600',
+  title:{ fr:'Fonctionnement', en:'Operation', de:'Funktionsweise' },
+  subtitle:{ fr:'Panneaux → Onduleur → Batterie', en:'Panels → Inverter → Battery', de:'Module → Wechselrichter → Batterie' },
+  content:{
+    fr:[
+      { type:'h2', text:'La chaîne énergétique solaire' },
+      { type:'p', text:"Un système solaire avec stockage transforme l'énergie du soleil en électricité utilisable 24h/24. Voici le parcours de l'énergie :" },
+      { type:'flow', steps:[
+        { icon:'☀️', title:'Panneaux PV', desc:'Produisent du courant continu (DC)' },
+        { icon:'🔄', title:'Onduleur', desc:'Convertit DC ↔ AC et pilote la batterie' },
+        { icon:'🔋', title:'Battery-Box', desc:"Stocke l'énergie (BCU + modules)" },
+        { icon:'🏠', title:'Consommation', desc:'Alimente la maison ou le réseau' }
+      ]},
+      { type:'h2', text:'Anatomie de la Battery-Box Premium' },
+      { type:'cards', items:[
+        { title:'BCU — Battery Control Unit', desc:"Le cerveau du système. Contient le BMU (gère les mises à jour firmware) et le BMS (gère les cellules).", icon:'🧠' },
+        { title:'Modules de batterie', desc:'Empilés en tour. Deux familles : HVS ("I") et HVM ("II"). Ne jamais mélanger !', icon:'🔋' }
+      ]},
+      { type:'warning', text:"⚠️ Haute tension ! L'installation et toute mesure doivent être réalisées par un électricien qualifié." },
+      { type:'h2', text:'Communication & interface' },
+      { type:'list', items:[
+        'LED : blanche fixe = standby, clignotante = charge/décharge, bleue clignotante = code erreur (EC)',
+        'WLAN : point d\'accès "BYDB-Box" (mot de passe : BYDB-Box)',
+        'Application mobile : Be Connect (≥ 1.7.4)',
+        'Outil PC : Be Connect Plus (Windows uniquement)'
+      ]}
+    ],
+    en:[
+      { type:'h2', text:'The solar energy chain' },
+      { type:'p', text:'A solar system with storage converts sunlight into electricity usable 24/7. Energy path:' },
+      { type:'flow', steps:[
+        { icon:'☀️', title:'PV Panels', desc:'Produce direct current (DC)' },
+        { icon:'🔄', title:'Inverter', desc:'Converts DC ↔ AC and controls battery' },
+        { icon:'🔋', title:'Battery-Box', desc:'Stores energy (BCU + modules)' },
+        { icon:'🏠', title:'Consumption', desc:'Powers home or grid' }
+      ]},
+      { type:'h2', text:'Anatomy of the Battery-Box Premium' },
+      { type:'cards', items:[
+        { title:'BCU — Battery Control Unit', desc:'Brain of the system. Contains the BMU (firmware updates) and BMS (cell management).', icon:'🧠' },
+        { title:'Battery modules', desc:'Stacked in a tower. Two families: HVS ("I") and HVM ("II"). Never mix!', icon:'🔋' }
+      ]},
+      { type:'warning', text:'⚠️ High voltage! Installation and any measurement must be done by a qualified electrician.' },
+      { type:'h2', text:'Communication & interface' },
+      { type:'list', items:[
+        'LED: solid white = standby, blinking = charge/discharge, blinking blue = error code (EC)',
+        'WLAN: access point "BYDB-Box" (password: BYDB-Box)',
+        'Mobile app: Be Connect (≥ 1.7.4)',
+        'PC tool: Be Connect Plus (Windows only)'
+      ]}
+    ],
+    de:[
+      { type:'h2', text:'Die solare Energiekette' },
+      { type:'p', text:'Ein Solarsystem mit Speicher wandelt Sonnenlicht in 24/7 nutzbaren Strom um. Der Energiepfad:' },
+      { type:'flow', steps:[
+        { icon:'☀️', title:'PV-Module', desc:'Erzeugen Gleichstrom (DC)' },
+        { icon:'🔄', title:'Wechselrichter', desc:'Wandelt DC ↔ AC und steuert Batterie' },
+        { icon:'🔋', title:'Battery-Box', desc:'Speichert Energie (BCU + Module)' },
+        { icon:'🏠', title:'Verbrauch', desc:'Versorgt Haus oder Netz' }
+      ]},
+      { type:'h2', text:'Anatomie der Battery-Box Premium' },
+      { type:'cards', items:[
+        { title:'BCU — Battery Control Unit', desc:'Gehirn des Systems. Enthält BMU (Firmware-Updates) und BMS (Zellverwaltung).', icon:'🧠' },
+        { title:'Batteriemodule', desc:'Gestapelt im Turm. Zwei Familien: HVS ("I") und HVM ("II"). Nie mischen!', icon:'🔋' }
+      ]},
+      { type:'warning', text:'⚠️ Hochspannung! Installation und alle Messungen nur durch qualifizierte Elektriker.' },
+      { type:'h2', text:'Kommunikation & Schnittstelle' },
+      { type:'list', items:[
+        'LED: dauerhaft weiß = Standby, blinkend = Laden/Entladen, blau blinkend = Fehlercode (EC)',
+        'WLAN: Zugangspunkt "BYDB-Box" (Passwort: BYDB-Box)',
+        'Mobile App: Be Connect (≥ 1.7.4)',
+        'PC-Tool: Be Connect Plus (nur Windows)'
+      ]}
+    ]
+  },
+  quiz:[
+    { q:{fr:'Que signifie BCU ?',en:'What does BCU stand for?',de:'Was bedeutet BCU?'},
+      options:{fr:['Battery Charging Unit','Battery Control Unit','Battery Conversion Unit','Basic Control Unit'],en:['Battery Charging Unit','Battery Control Unit','Battery Conversion Unit','Basic Control Unit'],de:['Battery Charging Unit','Battery Control Unit','Battery Conversion Unit','Basic Control Unit']},
+      answer:1, expl:{fr:'BCU = Battery Control Unit, le cerveau du système.',en:'BCU = Battery Control Unit, the system\'s brain.',de:'BCU = Battery Control Unit, das Gehirn des Systems.'} },
+    { q:{fr:'Peut-on mélanger HVS et HVM ?',en:'Can you mix HVS and HVM?',de:'Kann man HVS und HVM mischen?'},
+      options:{fr:['Oui si même tension','Non, jamais','Oui en parallèle','Oui avec firmware ≥ 3.0'],en:['Yes if same voltage','No, never','Yes in parallel','Yes with firmware ≥ 3.0'],de:['Ja bei gleicher Spannung','Nein, niemals','Ja parallel','Ja mit Firmware ≥ 3.0']},
+      answer:1, expl:{fr:'Les modules HVS ("I") et HVM ("II") ne doivent jamais être combinés.',en:'HVS ("I") and HVM ("II") modules must never be combined.',de:'HVS ("I") und HVM ("II") dürfen niemals kombiniert werden.'} },
+    { q:{fr:'Rôle du BMU dans la BCU ?',en:'Role of the BMU in the BCU?',de:'Rolle des BMU in der BCU?'},
+      options:{fr:['Gérer les cellules','Mettre à jour le BMS','Convertir DC en AC','Contrôler la LED'],en:['Manage cells','Update the BMS','Convert DC to AC','Control the LED'],de:['Zellen verwalten','BMS aktualisieren','DC in AC wandeln','LED steuern']},
+      answer:1, expl:{fr:'Le BMU reçoit les MAJ de l\'app puis met à jour le BMS.',en:'The BMU receives app updates then updates the BMS.',de:'Das BMU erhält App-Updates und aktualisiert das BMS.'} },
+    { q:{fr:'Durée du WLAN après démarrage ?',en:'WLAN duration after start?',de:'WLAN-Dauer nach Start?'},
+      options:{fr:['1 h','5 h','12 h','Illimité'],en:['1 h','5 h','12 h','Unlimited'],de:['1 Std','5 Std','12 Std','Unbegrenzt']},
+      answer:1, expl:{fr:'Le WLAN s\'éteint 5h après le démarrage.',en:'WLAN turns off 5h after start.',de:'WLAN schaltet 5 Std nach Start ab.'} },
+    { q:{fr:'LED blanche fixe = ?',en:'Solid white LED = ?',de:'Dauerhaft weiße LED = ?'},
+      options:{fr:['Erreur critique','Standby','Défaut de comm','Batterie vide'],en:['Critical error','Standby','Comm fault','Empty battery'],de:['Kritischer Fehler','Standby','Kommunikationsfehler','Batterie leer']},
+      answer:1, expl:{fr:'LED blanche fixe = standby ; clignotante = charge/décharge.',en:'Solid white = standby; blinking = charge/discharge.',de:'Dauerhaft weiß = Standby; blinkend = Laden/Entladen.'} },
+    { q:{fr:'Quel outil PC pour le diagnostic ?',en:'Which PC tool for diagnostics?',de:'Welches PC-Tool für Diagnose?'},
+      options:{fr:['Be Connect','Be Connect Plus','Be Diagnostic','Be Service'],en:['Be Connect','Be Connect Plus','Be Diagnostic','Be Service'],de:['Be Connect','Be Connect Plus','Be Diagnostic','Be Service']},
+      answer:1, expl:{fr:'Be Connect Plus (Windows) permet lecture, config, MAJ et export logs.',en:'Be Connect Plus (Windows) allows reading, config, update and log export.',de:'Be Connect Plus (Windows) für Lesen, Konfig, Update und Log-Export.'} },
+    { q:{fr:'Quel type de courant sortent les panneaux PV ?',en:'What current type do PV panels output?',de:'Welchen Stromtyp liefern PV-Module?'},
+      options:{fr:['AC','DC','Les deux','Aucun'],en:['AC','DC','Both','None'],de:['AC','DC','Beide','Keiner']},
+      answer:1, expl:{fr:'Les panneaux produisent du courant continu (DC), converti en AC par l\'onduleur.',en:'Panels produce DC, converted to AC by the inverter.',de:'Module liefern DC, vom Wechselrichter in AC umgewandelt.'} },
+    { q:{fr:'Quel composant pilote la charge/décharge ?',en:'Which component controls charge/discharge?',de:'Welche Komponente steuert Laden/Entladen?'},
+      options:{fr:['Les panneaux','L\'onduleur','La BCU seule','Le réseau'],en:['Panels','Inverter','BCU alone','Grid'],de:['Module','Wechselrichter','Nur BCU','Netz']},
+      answer:1, expl:{fr:'L\'onduleur pilote la charge/décharge en fonction des paramètres de la batterie.',en:'The inverter controls charge/discharge based on battery parameters.',de:'Der Wechselrichter steuert Laden/Entladen anhand der Batterieparameter.'} },
+    { q:{fr:'Que contient le BMS ?',en:'What does the BMS contain?',de:'Was enthält das BMS?'},
+      options:{fr:['Le firmware UI','La gestion des cellules','Le convertisseur DC/AC','Le WLAN'],en:['UI firmware','Cell management','DC/AC converter','WLAN'],de:['UI-Firmware','Zellverwaltung','DC/AC-Wandler','WLAN']},
+      answer:1, expl:{fr:'Le BMS gère les cellules (tension, température, équilibrage).',en:'The BMS manages cells (voltage, temperature, balancing).',de:'Das BMS verwaltet Zellen (Spannung, Temperatur, Balancing).'} },
+    { q:{fr:'WLAN par défaut ?',en:'Default WLAN?',de:'Standard-WLAN?'},
+      options:{fr:['BYD-Box','BYDB-Box','BYD-WiFi','Battery-Box'],en:['BYD-Box','BYDB-Box','BYD-WiFi','Battery-Box'],de:['BYD-Box','BYDB-Box','BYD-WiFi','Battery-Box']},
+      answer:1, expl:{fr:'SSID = BYDB-Box, mot de passe = BYDB-Box.',en:'SSID = BYDB-Box, password = BYDB-Box.',de:'SSID = BYDB-Box, Passwort = BYDB-Box.'} }
+  ]
+},
+/* ==================== MODULE 2 ==================== */
+{
+  id:'m2', icon:'🎯', color:'from-blue-500 to-indigo-600',
+  title:{ fr:'Critères de choix', en:'Selection criteria', de:'Auswahlkriterien' },
+  subtitle:{ fr:'HVS vs HVM, dimensionnement', en:'HVS vs HVM, sizing', de:'HVS vs HVM, Dimensionierung' },
+  content:{
+    fr:[
+      { type:'h2', text:'HVS ou HVM ? Le comparatif' },
+      { type:'table', headers:['Critère','HVS','HVM'], rows:[['Modules minimum','2','3'],['Type module','"I"','"II"'],['Capacités','5.1 → 12.8 kWh','8.3 → 22.1 kWh'],['Usage','Résidentiel compact','Résidentiel étendu / tertiaire']]},
+      { type:'h2', text:'Les 6 critères de choix' },
+      { type:'list-numbered', items:['Besoin énergétique : kWh/jour × jours d\'autonomie','Puissance onduleur : Compatible Inverter List V2.2+','Espace : HVS compact, HVM plus haut','Extensibilité : ajout entre 25–35 % SOC','Environnement : température, ventilation, humidité','Configuration : DIP switches à GAUCHE (sauf Kostal PIKO MP plus)']},
+      { type:'h2', text:'Erreurs à éviter' },
+      { type:'warning-list', items:['Mélanger modules HVS et HVM','Ajouter un module hors plage 25–35 % SOC','Raccorder la terre via le boîtier de l\'onduleur','Ignorer la liste de compatibilité onduleurs']},
+      { type:'h2', text:'Mise à la terre — règle d\'or' },
+      { type:'p', text:'La batterie doit être raccordée DIRECTEMENT à la barre de terre du bâtiment. Une terre incorrecte empêche une transmission de données fiable.' }
+    ],
+    en:[
+      { type:'h2', text:'HVS or HVM? Comparison' },
+      { type:'table', headers:['Criterion','HVS','HVM'], rows:[['Min modules','2','3'],['Module type','"I"','"II"'],['Capacities','5.1 → 12.8 kWh','8.3 → 22.1 kWh'],['Use','Compact residential','Extended residential / commercial']]},
+      { type:'h2', text:'The 6 selection criteria' },
+      { type:'list-numbered', items:['Energy need: kWh/day × autonomy days','Inverter power: Compatible Inverter List V2.2+','Space: HVS compact, HVM taller','Scalability: add between 25–35% SOC','Environment: temperature, ventilation, humidity','Configuration: DIP switches LEFT (except Kostal PIKO MP plus)']},
+      { type:'h2', text:'Errors to avoid' },
+      { type:'warning-list', items:['Mixing HVS and HVM modules','Adding a module outside 25–35% SOC','Grounding via the inverter enclosure','Ignoring inverter compatibility list']},
+      { type:'h2', text:'Grounding — golden rule' },
+      { type:'p', text:'Battery must be connected DIRECTLY to the building earth bar. Improper grounding prevents reliable data transmission.' }
+    ],
+    de:[
+      { type:'h2', text:'HVS oder HVM? Vergleich' },
+      { type:'table', headers:['Kriterium','HVS','HVM'], rows:[['Min. Module','2','3'],['Modultyp','"I"','"II"'],['Kapazitäten','5.1 → 12.8 kWh','8.3 → 22.1 kWh'],['Einsatz','Kompakt Wohn','Erweitert Wohn / Gewerbe']]},
+      { type:'h2', text:'Die 6 Auswahlkriterien' },
+      { type:'list-numbered', items:['Energiebedarf: kWh/Tag × Autonomietage','Wechselrichterleistung: Compatible Inverter List V2.2+','Platz: HVS kompakt, HVM höher','Erweiterbarkeit: hinzufügen bei 25–35 % SOC','Umgebung: Temperatur, Belüftung, Feuchtigkeit','Konfiguration: DIP-Schalter LINKS (außer Kostal PIKO MP plus)']},
+      { type:'h2', text:'Zu vermeidende Fehler' },
+      { type:'warning-list', items:['HVS und HVM Module mischen','Modul außerhalb 25–35 % SOC hinzufügen','Erdung über Wechselrichtergehäuse','Kompatibilitätsliste ignorieren']},
+      { type:'h2', text:'Erdung — goldene Regel' },
+      { type:'p', text:'Batterie DIREKT an die Hauserdungsschiene anschließen. Falsche Erdung verhindert zuverlässige Datenübertragung.' }
+    ]
+  },
+  quiz:[
+    { q:{fr:'Modules minimum pour HVM ?',en:'Min modules for HVM?',de:'Min. Module für HVM?'},
+      options:{fr:['2','3','4','6'],en:['2','3','4','6'],de:['2','3','4','6']},
+      answer:1, expl:{fr:'HVM = 3 modules min ; HVS = 2.',en:'HVM = 3 min; HVS = 2.',de:'HVM = 3 min.; HVS = 2.'} },
+    { q:{fr:'SOC pour ajouter un module ?',en:'SOC to add a module?',de:'SOC zum Hinzufügen eines Moduls?'},
+      options:{fr:['100 %','50 %','Entre 25 et 35 %','Peu importe'],en:['100%','50%','Between 25–35%','Any'],de:['100 %','50 %','Zwischen 25–35 %','Egal']},
+      answer:2, expl:{fr:'Tolérance 5 % entre modules.',en:'Tolerance 5% between modules.',de:'Toleranz 5 % zwischen Modulen.'} },
+    { q:{fr:'DIP switches pour 1 ou 2 tours ?',en:'DIP switches for 1 or 2 towers?',de:'DIP-Schalter für 1 oder 2 Türme?'},
+      options:{fr:['Droite','Gauche','Alternés','Peu importe'],en:['Right','Left','Alternating','Any'],de:['Rechts','Links','Abwechselnd','Egal']},
+      answer:1, expl:{fr:'Tous à GAUCHE (exceptions documentées).',en:'All LEFT (documented exceptions).',de:'Alle LINKS (dokumentierte Ausnahmen).'} },
+    { q:{fr:'Terre de la batterie raccordée…',en:'Battery ground connected…',de:'Batterieerdung angeschlossen…'},
+      options:{fr:['Au boîtier onduleur','Directement à la barre de terre','À un piquet isolé','Inutile'],en:['To inverter enclosure','Directly to earth bar','To isolated rod','Not needed'],de:['An Wechselrichtergehäuse','Direkt an Erdungsschiene','An isolierten Stab','Nicht nötig']},
+      answer:1, expl:{fr:'Jamais via un autre appareil.',en:'Never via another device.',de:'Nie über ein anderes Gerät.'} },
+    { q:{fr:'Document validant compatibilité ?',en:'Document validating compatibility?',de:'Dokument für Kompatibilität?'},
+      options:{fr:['Datasheet','Compatible Inverter List V2.0+','Manuel BCU','Fiche QCM'],en:['Datasheet','Compatible Inverter List V2.0+','BCU manual','Quiz sheet'],de:['Datenblatt','Compatible Inverter List V2.0+','BCU-Handbuch','Quizblatt']},
+      answer:1, expl:{fr:'La Compatible Inverter List est la référence.',en:'The Compatible Inverter List is the reference.',de:'Die Compatible Inverter List ist die Referenz.'} },
+    { q:{fr:'Capacité max HVM ?',en:'Max HVM capacity?',de:'Max. HVM-Kapazität?'},
+      options:{fr:['12.8 kWh','16.6 kWh','22.1 kWh','30 kWh'],en:['12.8 kWh','16.6 kWh','22.1 kWh','30 kWh'],de:['12.8 kWh','16.6 kWh','22.1 kWh','30 kWh']},
+      answer:2, expl:{fr:'HVM jusqu\'à 22.1 kWh (3 tours).',en:'HVM up to 22.1 kWh (3 towers).',de:'HVM bis 22.1 kWh (3 Türme).'} },
+    { q:{fr:'Capacité max HVS ?',en:'Max HVS capacity?',de:'Max. HVS-Kapazität?'},
+      options:{fr:['7.7 kWh','10.2 kWh','12.8 kWh','16.6 kWh'],en:['7.7 kWh','10.2 kWh','12.8 kWh','16.6 kWh'],de:['7.7 kWh','10.2 kWh','12.8 kWh','16.6 kWh']},
+      answer:2, expl:{fr:'HVS jusqu\'à 12.8 kWh.',en:'HVS up to 12.8 kWh.',de:'HVS bis 12.8 kWh.'} },
+    { q:{fr:'Quel type de module pour HVS ?',en:'Module type for HVS?',de:'Modultyp für HVS?'},
+      options:{fr:['"I"','"II"','"III"','Peu importe'],en:['"I"','"II"','"III"','Any'],de:['"I"','"II"','"III"','Egal']},
+      answer:0, expl:{fr:'HVS utilise modules "I", HVM utilise "II".',en:'HVS uses "I", HVM uses "II".',de:'HVS verwendet "I", HVM "II".'} },
+    { q:{fr:'Quel critère pour dimensionner ?',en:'Which criterion for sizing?',de:'Welches Kriterium zur Dimensionierung?'},
+      options:{fr:['Couleur','kWh/jour × autonomie','Nombre de PV seulement','Prix uniquement'],en:['Color','kWh/day × autonomy','PV count only','Price only'],de:['Farbe','kWh/Tag × Autonomie','Nur PV-Anzahl','Nur Preis']},
+      answer:1, expl:{fr:'Le besoin énergétique journalier × jours d\'autonomie est la base.',en:'Daily energy need × autonomy days is the basis.',de:'Täglicher Energiebedarf × Autonomietage ist die Basis.'} },
+    { q:{fr:'3 tours en parallèle : DIP ?',en:'3 towers in parallel: DIP?',de:'3 Türme parallel: DIP?'},
+      options:{fr:['Tous gauche','Tous droite','Selon manuel','Aléatoire'],en:['All left','All right','Per manual','Random'],de:['Alle links','Alle rechts','Laut Handbuch','Zufällig']},
+      answer:2, expl:{fr:'Configuration spécifique selon le manuel.',en:'Specific configuration per manual.',de:'Spezifische Konfiguration laut Handbuch.'} }
+  ]
+},
+/* ==================== MODULE 3 ==================== */
+{
+  id:'m3', icon:'🔧', color:'from-amber-500 to-orange-600',
+  title:{ fr:'Installation', en:'Installation', de:'Installation' },
+  subtitle:{ fr:'Mise en service & redémarrage', en:'Commissioning & restart', de:'Inbetriebnahme & Neustart' },
+  content:{
+    fr:[
+      { type:'h2', text:'Checklist des 8 étapes' },
+      { type:'checklist', items:['Configuration correcte (Compatible List)','Uniquement HVS ou HVM','Connexions : comm, parallélisme, DIP, Ethernet, DC, terre','Couvercle BCU fermé (sinon disjonction)','Dernier firmware (App > 1.7.4)','Configuration via Be Connect / BCP','Ordre démarrage : Batterie → Onduleur','Vérification : SOC + charge/décharge active']},
+      { type:'h2', text:'Procédure de redémarrage défini' },
+      { type:'steps', items:[
+        { n:1, t:'Batterie OFF', d:'Appui 5 s sur la LED' },
+        { n:2, t:'DC onduleur OFF', d:'' },
+        { n:3, t:'AC onduleur OFF', d:'' },
+        { n:4, t:'[Kostal] Retirer PV', d:'' },
+        { n:5, t:'Attendre 10 minutes', d:'' },
+        { n:6, t:'Batterie ON', d:'Levier vers le haut' },
+        { n:7, t:'[Kostal] Reconnecter PV', d:'' },
+        { n:8, t:'AC onduleur ON', d:'' },
+        { n:9, t:'DC onduleur ON', d:'' }
+      ]},
+      { type:'warning', text:"💡 Si la LED ne s'éteint pas après 5 s, soulever la BCU pour éviter la décharge profonde, puis contacter le service." },
+      { type:'h2', text:'SOC & régulation' },
+      { type:'list', items:['Modules neufs ≈ 30 %','Première mise en service : SOC fictif (50/30/0 %)','Calibration après 1 cycle complet (100 % → décharge max)','SOC = valeur CALCULÉE, écarts normaux']}
+    ],
+    en:[
+      { type:'h2', text:'8-step checklist' },
+      { type:'checklist', items:['Correct config (Compatible List)','Only HVS or HVM','Connections: comm, parallel, DIP, Ethernet, DC, ground','BCU cover closed (else trip)','Latest firmware (App > 1.7.4)','Config via Be Connect / BCP','Start order: Battery → Inverter','Check: SOC + active charge/discharge']},
+      { type:'h2', text:'Defined restart procedure' },
+      { type:'steps', items:[
+        { n:1, t:'Battery OFF', d:'Press LED 5 s' },
+        { n:2, t:'Inverter DC OFF', d:'' },
+        { n:3, t:'Inverter AC OFF', d:'' },
+        { n:4, t:'[Kostal] Remove PV', d:'' },
+        { n:5, t:'Wait 10 minutes', d:'' },
+        { n:6, t:'Battery ON', d:'Lever up' },
+        { n:7, t:'[Kostal] Reconnect PV', d:'' },
+        { n:8, t:'Inverter AC ON', d:'' },
+        { n:9, t:'Inverter DC ON', d:'' }
+      ]},
+      { type:'warning', text:'💡 If LED does not turn off after 5 s, lift the BCU to avoid deep discharge, then contact service.' },
+      { type:'h2', text:'SOC & regulation' },
+      { type:'list', items:['New modules ≈ 30%','First commissioning: fake SOC (50/30/0%)','Calibration after 1 full cycle (100% → max discharge)','SOC = CALCULATED value, deviations normal']}
+    ],
+    de:[
+      { type:'h2', text:'8-Schritte-Checkliste' },
+      { type:'checklist', items:['Korrekte Konfiguration (Compatible List)','Nur HVS oder HVM','Anschlüsse: Komm, Parallel, DIP, Ethernet, DC, Erde','BCU-Abdeckung geschlossen (sonst Auslösung)','Neueste Firmware (App > 1.7.4)','Konfiguration via Be Connect / BCP','Startreihenfolge: Batterie → Wechselrichter','Prüfen: SOC + aktives Laden/Entladen']},
+      { type:'h2', text:'Definierter Neustart' },
+      { type:'steps', items:[
+        { n:1, t:'Batterie AUS', d:'LED 5 s drücken' },
+        { n:2, t:'WR DC AUS', d:'' },
+        { n:3, t:'WR AC AUS', d:'' },
+        { n:4, t:'[Kostal] PV entfernen', d:'' },
+        { n:5, t:'10 Minuten warten', d:'' },
+        { n:6, t:'Batterie EIN', d:'Hebel nach oben' },
+        { n:7, t:'[Kostal] PV wieder anschließen', d:'' },
+        { n:8, t:'WR AC EIN', d:'' },
+        { n:9, t:'WR DC EIN', d:'' }
+      ]},
+      { type:'warning', text:'💡 Wenn LED nach 5 s nicht ausgeht, BCU abheben zur Vermeidung von Tiefenentladung, dann Service kontaktieren.' },
+      { type:'h2', text:'SOC & Regelung' },
+      { type:'list', items:['Neue Module ≈ 30 %','Erstinbetriebnahme: fiktiver SOC (50/30/0 %)','Kalibrierung nach 1 Vollzyklus (100 % → max. Entladung)','SOC = BERECHNETER Wert, Abweichungen normal']}
+    ]
+  },
+  quiz:[
+    { q:{fr:'Ordre correct de démarrage ?',en:'Correct start order?',de:'Korrekte Startreihenfolge?'},
+      options:{fr:['Onduleur puis batterie','Batterie puis onduleur','Simultané','Peu importe'],en:['Inverter then battery','Battery then inverter','Simultaneous','Any'],de:['WR dann Batterie','Batterie dann WR','Gleichzeitig','Egal']},
+      answer:1, expl:{fr:'TOUJOURS batterie d\'abord.',en:'ALWAYS battery first.',de:'IMMER Batterie zuerst.'} },
+    { q:{fr:'Couvercle BCU ouvert = ?',en:'BCU cover open = ?',de:'BCU-Abdeckung offen = ?'},
+      options:{fr:['Rien','Batterie ne s\'allume pas','WLAN actif','SOC 100 %'],en:['Nothing','Battery won\'t start','WLAN active','SOC 100%'],de:['Nichts','Batterie startet nicht','WLAN aktiv','SOC 100 %']},
+      answer:1, expl:{fr:'Sécurité : sectionneur ne peut pas s\'enclencher.',en:'Safety: breaker cannot engage.',de:'Sicherheit: Schalter rastet nicht ein.'} },
+    { q:{fr:'Attente redémarrage défini ?',en:'Wait time for defined restart?',de:'Wartezeit beim definierten Neustart?'},
+      options:{fr:['30 s','5 min','10 min','1 h'],en:['30 s','5 min','10 min','1 h'],de:['30 s','5 min','10 min','1 Std']},
+      answer:2, expl:{fr:'10 minutes.',en:'10 minutes.',de:'10 Minuten.'} },
+    { q:{fr:'SOC initial modules neufs ?',en:'Initial SOC of new modules?',de:'Anfangs-SOC neuer Module?'},
+      options:{fr:['0 %','~30 %','50 %','100 %'],en:['0%','~30%','50%','100%'],de:['0 %','~30 %','50 %','100 %']},
+      answer:1, expl:{fr:'~30 %.',en:'~30%.',de:'~30 %.'} },
+    { q:{fr:'Fin calibration SOC ?',en:'SOC calibration ends?',de:'SOC-Kalibrierung endet?'},
+      options:{fr:['Dès allumage','Après 1 cycle complet','1 mois','Jamais'],en:['At startup','After 1 full cycle','1 month','Never'],de:['Beim Start','Nach 1 Vollzyklus','1 Monat','Nie']},
+      answer:1, expl:{fr:'Cycle complet 100 % → décharge max.',en:'Full cycle 100% → max discharge.',de:'Vollzyklus 100 % → max. Entladung.'} },
+    { q:{fr:'Firmware app minimum ?',en:'Minimum app firmware?',de:'Minimale App-Firmware?'},
+      options:{fr:['1.0','1.5','1.7.4','2.0'],en:['1.0','1.5','1.7.4','2.0'],de:['1.0','1.5','1.7.4','2.0']},
+      answer:2, expl:{fr:'App > 1.7.4 requise.',en:'App > 1.7.4 required.',de:'App > 1.7.4 erforderlich.'} },
+    { q:{fr:'Si LED ne s\'éteint pas après 5 s ?',en:'If LED won\'t turn off after 5 s?',de:'Wenn LED nach 5 s nicht ausgeht?'},
+      options:{fr:['Ignorer','Soulever la BCU','Débrancher AC','Appuyer plus fort'],en:['Ignore','Lift the BCU','Disconnect AC','Press harder'],de:['Ignorieren','BCU abheben','AC trennen','Stärker drücken']},
+      answer:1, expl:{fr:'Soulever la BCU pour éviter la décharge profonde, puis contacter le service.',en:'Lift BCU to avoid deep discharge, then contact service.',de:'BCU abheben zur Vermeidung von Tiefenentladung, dann Service.'} },
+    { q:{fr:'Ethernet est-il recommandé ?',en:'Is Ethernet recommended?',de:'Ist Ethernet empfohlen?'},
+      options:{fr:['Non','Oui, fortement','Optionnel','Interdit'],en:['No','Yes, strongly','Optional','Forbidden'],de:['Nein','Ja, dringend','Optional','Verboten']},
+      answer:1, expl:{fr:'Ethernet pour Internet est dringend empfohlen.',en:'Ethernet for Internet is strongly recommended.',de:'Ethernet für Internet ist dringend empfohlen.'} },
+    { q:{fr:'Quel câble comm minimum ?',en:'Minimum comm cable?',de:'Minimales Kommunikationskabel?'},
+      options:{fr:['CAT3','CAT5','CAT7','Fibre'],en:['CAT3','CAT5','CAT7','Fiber'],de:['CAT3','CAT5','CAT7','Glasfaser']},
+      answer:1, expl:{fr:'CAT5 minimum, CAT7 idéal.',en:'CAT5 minimum, CAT7 ideal.',de:'CAT5 min., CAT7 ideal.'} },
+    { q:{fr:'Que faire après config App ?',en:'What to do after app config?',de:'Was nach App-Konfiguration?'},
+      options:{fr:['Rien','Redémarrer le système','Reset WLAN','Débrancher'],en:['Nothing','Restart the system','Reset WLAN','Disconnect'],de:['Nichts','System neu starten','WLAN zurücksetzen','Trennen']},
+      answer:1, expl:{fr:'Un redémarrage défini est souvent nécessaire.',en:'A defined restart is often required.',de:'Ein definierter Neustart ist oft nötig.'} }
+  ]
+},
+/* ==================== MODULE 4 ==================== */
+{
+  id:'m4', icon:'🩺', color:'from-rose-500 to-red-600',
+  title:{ fr:'Défauts & solutions', en:'Faults & solutions', de:'Fehler & Lösungen' },
+  subtitle:{ fr:'Diagnostic & codes LED', en:'Diagnostics & LED codes', de:'Diagnose & LED-Codes' },
+  content:{
+    fr:[
+      { type:'h2', text:'Arbre de décision rapide' },
+      { type:'decision', items:[
+        { title:'BCU ne répond pas', steps:['Vérifier nombre min. modules','Mesurer tension (§2.10)','Vérifier ordre d\'allumage','WLAN présent ?','Tester autre BCU'] },
+        { title:'Sectionneur ne s\'enclenche pas', steps:['Couvercle fermé ?','Levier baissé manuellement ? (10 min)','EC102 ? Vérifier DC + config','LED reste allumée ? Soulever BCU, service'] },
+        { title:'Pas de comm onduleur', steps:['Compatible List V2.2+','Firmware à jour','DIP à GAUCHE','CAT5 min (CAT7 idéal)','SMA/Fronius : Enable Signal','Terre + redémarrage défini'] },
+        { title:'Arrêt inattendu', steps:['Comm interrompue ? (auto-off 30 min)','Logs batterie via BCP','Portail onduleur'] }
+      ]},
+      { type:'h2', text:'Défauts fréquents & solutions pratiques' },
+      { type:'ec-table', items:[
+        { code:'102', sig:'Arrêt anormal / couvercle ouvert / DC inversé', action:'Vérifier DC (batterie, onduleur, busbar), fermer le couvercle, redémarrer. Si LED reste allumée : soulever BCU, mesurer tension, contacter service.', severity:'high' },
+        { code:'103', sig:'Capteur tension / comm BMU-BMS', action:'Vérifier DIP switches (GAUCHE). Retirer module haut. Si problème persiste : autre BCU.', severity:'high' },
+        { code:'104', sig:'Capteur température', action:'Diagnostic via BCP (Zelldaten) pour identifier le module. Alternative : méthode exclusion module.', severity:'med' },
+        { code:'105', sig:'Capteur tension pack', action:'Vérifier DC batterie/onduleur/busbar. Redémarrage défini. Si persiste : tester autre BCU.', severity:'med' },
+        { code:'106', sig:'Capteur courant', action:'Installer dernier firmware. Redémarrage. Si persiste : autre BCU.', severity:'med' },
+        { code:'107', sig:'Sous-tension', action:'Éteindre vite (LED 5 s). Si impossible : soulever BCU. Mesurer tension (§2.10). Ne pas réutiliser avant charge.', severity:'high' },
+        { code:'108', sig:'Précharge défectueuse', action:'Vérifier DC batterie/onduleur/busbar. Redémarrage défini. Si persiste : autre BCU.', severity:'med' },
+        { code:'109', sig:'Souvent module défectueux', action:'Firmware + redémarrage. Si persiste : méthode exclusion module (§2.11).', severity:'med' },
+        { code:'110', sig:'Tension basse — recharger d\'urgence', action:'Éteindre vite. Chercher pourquoi l\'onduleur ne maintient pas la charge. Ne pas rallumer avant certitude que l\'onduleur peut charger.', severity:'high' },
+        { code:'111', sig:'Pas de comm onduleur', action:'Vérifier config, DIP, câble, Enable Signal (SMA/Fronius), terre. Redémarrage défini.', severity:'med' },
+        { code:'203–803', sig:'Module non détecté (n° = position)', action:'Retirer module concerné/au-dessus. Réorganiser tour. Module défectueux souvent OK en position basse.', severity:'med' }
+      ]},
+      { type:'h2', text:'Méthode d\'exclusion module (§2.11)' },
+      { type:'list-numbered', items:['Retirer le module le plus haut','EC disparaît ? Module fautif identifié','Sinon tester le module en dessous','💡 Un module défectueux fonctionne souvent en position basse']},
+      { type:'h2', text:'Symptômes → Actions rapides' },
+      { type:'table', headers:['Symptôme','Cause probable','Action'], rows:[
+        ['LED ne s\'allume pas','Ordre démarrage incorrect','Batterie puis onduleur'],
+        ['Sectionneur ne tient pas','Couvercle ouvert','Fermer le couvercle BCU'],
+        ['WLAN non trouvé','WLAN éteint (>5h)','Appui 1 s sur LED'],
+        ['SOC figé','Configuration non sauvegardée','Réenregistrer config App/BCP'],
+        ['Pas de charge','Comm onduleur coupée','Vérifier câble + Enable Signal'],
+        ['Arrêt auto après 30 min','Comm batterie↔onduleur','Vérifier DIP + câble CAT']
+      ]}
+    ],
+    en:[
+      { type:'h2', text:'Quick decision tree' },
+      { type:'decision', items:[
+        { title:'BCU not responding', steps:['Check min modules','Measure voltage (§2.10)','Check start order','WLAN present?','Test another BCU'] },
+        { title:'Breaker won\'t engage', steps:['Cover closed?','Lever pulled manually? (10 min)','EC102? Check DC + config','LED still on? Lift BCU, service'] },
+        { title:'No inverter comm', steps:['Compatible List V2.2+','Firmware up to date','DIP LEFT','CAT5 min (CAT7 ideal)','SMA/Fronius: Enable Signal','Ground + defined restart'] },
+        { title:'Unexpected shutdown', steps:['Comm interrupted? (auto-off 30 min)','Battery logs via BCP','Inverter portal'] }
+      ]},
+      { type:'h2', text:'Common faults & practical solutions' },
+      { type:'ec-table', items:[
+        { code:'102', sig:'Abnormal shutdown / cover open / DC reversed', action:'Check DC (battery, inverter, busbar), close cover, restart. If LED stays on: lift BCU, measure voltage, contact service.', severity:'high' },
+        { code:'103', sig:'Voltage sensor / BMU-BMS comm', action:'Check DIP switches (LEFT). Remove top module. If persists: another BCU.', severity:'high' },
+        { code:'104', sig:'Temperature sensor', action:'Diagnose via BCP (cell data). Alternative: module exclusion method.', severity:'med' },
+        { code:'105', sig:'Pack voltage sensor', action:'Check DC battery/inverter/busbar. Defined restart. If persists: test another BCU.', severity:'med' },
+        { code:'106', sig:'Current sensor', action:'Install latest firmware. Restart. If persists: another BCU.', severity:'med' },
+        { code:'107', sig:'Undervoltage', action:'Shut down quickly (LED 5 s). If impossible: lift BCU. Measure voltage (§2.10). Do not reuse before charge.', severity:'high' },
+        { code:'108', sig:'Precharge fault', action:'Check DC battery/inverter/busbar. Defined restart. If persists: another BCU.', severity:'med' },
+        { code:'109', sig:'Often defective module', action:'Firmware + restart. If persists: module exclusion (§2.11).', severity:'med' },
+        { code:'110', sig:'Low voltage — recharge urgently', action:'Shut down quickly. Find why inverter isn\'t maintaining charge. Do not restart before inverter is verified.', severity:'high' },
+        { code:'111', sig:'No inverter comm', action:'Check config, DIP, cable, Enable Signal (SMA/Fronius), ground. Defined restart.', severity:'med' },
+        { code:'203–803', sig:'Module not detected (n° = position)', action:'Remove concerned/above module. Reorganize tower. Faulty module often works in bottom position.', severity:'med' }
+      ]},
+      { type:'h2', text:'Module exclusion method (§2.11)' },
+      { type:'list-numbered', items:['Remove the top module','EC disappears? Faulty module identified','Otherwise test the module below','💡 A faulty module often works in bottom position']},
+      { type:'h2', text:'Symptoms → Quick actions' },
+      { type:'table', headers:['Symptom','Likely cause','Action'], rows:[
+        ['LED won\'t turn on','Wrong start order','Battery then inverter'],
+        ['Breaker won\'t hold','Cover open','Close BCU cover'],
+        ['WLAN not found','WLAN off (>5h)','Press LED 1 s'],
+        ['SOC frozen','Config not saved','Re-save App/BCP config'],
+        ['No charging','Inverter comm lost','Check cable + Enable Signal'],
+        ['Auto-off after 30 min','Battery↔inverter comm','Check DIP + CAT cable']
+      ]}
+    ],
+    de:[
+      { type:'h2', text:'Schneller Entscheidungsbaum' },
+      { type:'decision', items:[
+        { title:'BCU reagiert nicht', steps:['Min. Module prüfen','Spannung messen (§2.10)','Startreihenfolge prüfen','WLAN vorhanden?','Andere BCU testen'] },
+        { title:'Schalter rastet nicht ein', steps:['Abdeckung geschlossen?','Hebel manuell gezogen? (10 min)','EC102? DC + Konfig prüfen','LED bleibt an? BCU abheben, Service'] },
+        { title:'Keine WR-Kommunikation', steps:['Compatible List V2.2+','Firmware aktuell','DIP LINKS','CAT5 min. (CAT7 ideal)','SMA/Fronius: Enable Signal','Erde + definierter Neustart'] },
+        { title:'Unerwartete Abschaltung', steps:['Komm unterbrochen? (Auto-Off 30 min)','Batterie-Logs via BCP','WR-Portal'] }
+      ]},
+      { type:'h2', text:'Häufige Fehler & praktische Lösungen' },
+      { type:'ec-table', items:[
+        { code:'102', sig:'Abnormale Abschaltung / Abdeckung offen / DC verpolt', action:'DC prüfen (Batterie, WR, Busbar), Abdeckung schließen, neu starten. LED bleibt an: BCU abheben, Spannung messen, Service.', severity:'high' },
+        { code:'103', sig:'Spannungssensor / BMU-BMS Komm', action:'DIP-Schalter prüfen (LINKS). Oberstes Modul entfernen. Wenn weiter: andere BCU.', severity:'high' },
+        { code:'104', sig:'Temperatursensor', action:'Diagnose via BCP (Zelldaten). Alternative: Modul-Ausschlussverfahren.', severity:'med' },
+        { code:'105', sig:'Packspannungssensor', action:'DC Batterie/WR/Busbar prüfen. Definierter Neustart. Wenn weiter: andere BCU.', severity:'med' },
+        { code:'106', sig:'Stromsensor', action:'Neueste Firmware installieren. Neustart. Wenn weiter: andere BCU.', severity:'med' },
+        { code:'107', sig:'Unterspannung', action:'Schnell ausschalten (LED 5 s). Wenn nicht möglich: BCU abheben. Spannung messen (§2.10). Vor Laden nicht wiederverwenden.', severity:'high' },
+        { code:'108', sig:'Vorladeschaltung fehlerhaft', action:'DC Batterie/WR/Busbar prüfen. Definierter Neustart. Wenn weiter: andere BCU.', severity:'med' },
+        { code:'109', sig:'Oft defektes Modul', action:'Firmware + Neustart. Wenn weiter: Modul-Ausschluss (§2.11).', severity:'med' },
+        { code:'110', sig:'Niedrige Spannung — dringend laden', action:'Schnell ausschalten. Ursache finden, warum WR nicht lädt. Vor Prüfung des WR nicht neu starten.', severity:'high' },
+        { code:'111', sig:'Keine WR-Komm', action:'Konfig, DIP, Kabel, Enable Signal (SMA/Fronius), Erde prüfen. Definierter Neustart.', severity:'med' },
+        { code:'203–803', sig:'Modul nicht erkannt (Nr. = Position)', action:'Betroffenes/darüberliegendes Modul entfernen. Turm neu ordnen. Defektes Modul funktioniert oft unten.', severity:'med' }
+      ]},
+      { type:'h2', text:'Modul-Ausschlussverfahren (§2.11)' },
+      { type:'list-numbered', items:['Oberstes Modul entfernen','EC verschwindet? Defektes Modul identifiziert','Sonst Modul darunter testen','💡 Defektes Modul funktioniert oft in unterster Position']},
+      { type:'h2', text:'Symptome → Schnellaktionen' },
+      { type:'table', headers:['Symptom','Wahrscheinliche Ursache','Aktion'], rows:[
+        ['LED geht nicht an','Falsche Startreihenfolge','Batterie dann WR'],
+        ['Schalter hält nicht','Abdeckung offen','BCU-Abdeckung schließen'],
+        ['WLAN nicht gefunden','WLAN aus (>5 Std)','LED 1 s drücken'],
+        ['SOC eingefroren','Konfig nicht gespeichert','App/BCP-Konfig neu speichern'],
+        ['Kein Laden','WR-Komm verloren','Kabel + Enable Signal prüfen'],
+        ['Auto-Off nach 30 min','Batterie↔WR Komm','DIP + CAT-Kabel prüfen']
+      ]}
+    ]
+  },
+  quiz:[
+    { q:{fr:'EC 102 signifie…',en:'EC 102 means…',de:'EC 102 bedeutet…'},
+      options:{fr:['Sous-tension','Arrêt anormal / couvercle ouvert','Erreur température','Module non détecté'],en:['Undervoltage','Abnormal shutdown / cover open','Temperature error','Module not detected'],de:['Unterspannung','Abnormale Abschaltung / Abdeckung offen','Temperaturfehler','Modul nicht erkannt']},
+      answer:1, expl:{fr:'Arrêt anormal, couvercle ouvert ou inversion DC.',en:'Abnormal shutdown, cover open or DC reversal.',de:'Abnormale Abschaltung, Abdeckung offen oder DC-Verpolung.'} },
+    { q:{fr:'Attente après sectionneur baissé manuellement ?',en:'Wait after manual breaker down?',de:'Wartezeit nach manuellem Schalter-Aus?'},
+      options:{fr:['1 min','5 min','10 min','30 min'],en:['1 min','5 min','10 min','30 min'],de:['1 min','5 min','10 min','30 min']},
+      answer:2, expl:{fr:'10 minutes.',en:'10 minutes.',de:'10 Minuten.'} },
+    { q:{fr:'EC 403 = ?',en:'EC 403 = ?',de:'EC 403 = ?'},
+      options:{fr:['Module supérieur','4ᵉ module depuis le haut','BCU','Onduleur'],en:['Top module','4th module from top','BCU','Inverter'],de:['Oberstes Modul','4. Modul von oben','BCU','Wechselrichter']},
+      answer:1, expl:{fr:'4 blancs + 3 bleus → 4ᵉ module.',en:'4 white + 3 blue → 4th module.',de:'4 weiß + 3 blau → 4. Modul.'} },
+    { q:{fr:'Auto-off sans comm après ?',en:'Auto-off without comm after?',de:'Auto-Off ohne Komm nach?'},
+      options:{fr:['5 min','30 min','2 h','24 h'],en:['5 min','30 min','2 h','24 h'],de:['5 min','30 min','2 Std','24 Std']},
+      answer:1, expl:{fr:'30 minutes.',en:'30 minutes.',de:'30 Minuten.'} },
+    { q:{fr:'Face à EC 110 ?',en:'On EC 110?',de:'Bei EC 110?'},
+      options:{fr:['Ignorer','Éteindre vite et recharger','Remplacer BCU','MAJ firmware seulement'],en:['Ignore','Shut down quickly and recharge','Replace BCU','Firmware update only'],de:['Ignorieren','Schnell ausschalten und laden','BCU ersetzen','Nur Firmware-Update']},
+      answer:1, expl:{fr:'Tension basse → recharger.',en:'Low voltage → recharge.',de:'Niedrige Spannung → laden.'} },
+    { q:{fr:'Module suspect fonctionne souvent…',en:'Faulty module often works…',de:'Defektes Modul funktioniert oft…'},
+      options:{fr:['Position haute','Position basse','À 50 % SOC','Seulement HVS'],en:['Top position','Bottom position','At 50% SOC','Only HVS'],de:['Oben','Unten','Bei 50 % SOC','Nur HVS']},
+      answer:1, expl:{fr:'En bas, pas de comm avec le pied.',en:'At bottom, no comm with base.',de:'Unten keine Komm mit Fuß.'} },
+    { q:{fr:'Symptôme : SOC figé. Action ?',en:'Symptom: frozen SOC. Action?',de:'Symptom: SOC eingefroren. Aktion?'},
+      options:{fr:['Remplacer batterie','Réenregistrer la config','Ignorer','Débrancher'],en:['Replace battery','Re-save config','Ignore','Disconnect'],de:['Batterie ersetzen','Konfig neu speichern','Ignorieren','Trennen']},
+      answer:1, expl:{fr:'La configuration n\'a probablement pas été sauvegardée.',en:'Config was likely not saved.',de:'Konfiguration wurde wohl nicht gespeichert.'} },
+    { q:{fr:'WLAN non trouvé. Action ?',en:'WLAN not found. Action?',de:'WLAN nicht gefunden. Aktion?'},
+      options:{fr:['Remplacer BCU','Appui 1 s sur LED','Reset usine','Attendre 24 h'],en:['Replace BCU','Press LED 1 s','Factory reset','Wait 24h'],de:['BCU ersetzen','LED 1 s drücken','Werksreset','24 Std warten']},
+      answer:1, expl:{fr:'WLAN s\'éteint après 5 h — appui 1 s sur LED pour réactiver.',en:'WLAN turns off after 5h — press LED 1 s to reactivate.',de:'WLAN schaltet nach 5 Std ab — LED 1 s drücken.'} },
+    { q:{fr:'EC 107 = ?',en:'EC 107 = ?',de:'EC 107 = ?'},
+      options:{fr:['Surcharge','Sous-tension','Court-circuit','Surchauffe'],en:['Overcharge','Undervoltage','Short circuit','Overheat'],de:['Überladung','Unterspannung','Kurzschluss','Überhitzung']},
+      answer:1, expl:{fr:'Sous-tension : éteindre vite.',en:'Undervoltage: shut down quickly.',de:'Unterspannung: schnell ausschalten.'} },
+    { q:{fr:'Câble CAT minimum ?',en:'Minimum CAT cable?',de:'Minimales CAT-Kabel?'},
+      options:{fr:['CAT3','CAT5','CAT7','Fibre'],en:['CAT3','CAT5','CAT7','Fiber'],de:['CAT3','CAT5','CAT7','Glasfaser']},
+      answer:1, expl:{fr:'CAT5 min, CAT7 idéal.',en:'CAT5 min, CAT7 ideal.',de:'CAT5 min., CAT7 ideal.'} }
+  ]
+},
+/* ==================== MODULE 5 ==================== */
+{
+  id:'m5', icon:'🧰', color:'from-purple-500 to-fuchsia-600',
+  title:{ fr:'Outils & LED', en:'Tools & LEDs', de:'Tools & LEDs' },
+  subtitle:{ fr:'Be Connect, BCP, décodage EC', en:'Be Connect, BCP, EC decoding', de:'Be Connect, BCP, EC-Dekodierung' },
+  content:{
+    fr:[
+      { type:'h2', text:'Be Connect (mobile)' },
+      { type:'list', items:['App ≥ 1.7.4','WLAN "BYDB-Box" — mdp : BYDB-Box','Configuration, firmware BMU, diagnostic','Problème ? Réinstaller ou changer d\'appareil']},
+      { type:'h2', text:'Be Connect Plus (PC — Windows)' },
+      { type:'list', items:['Windows uniquement','Login installer : BYDB-Box','Lecture infos, config, update BMU+BMS, export logs','Indispensable pour analyse service']},
+      { type:'h2', text:'Décodage des codes LED' },
+      { type:'led-demo', items:[
+        { white:1, blue:3, label:'EC 103' },
+        { white:1, blue:11, label:'EC 111' },
+        { white:3, blue:3, label:'EC 303' }
+      ]},
+      { type:'p', text:'Comptage : nb de blancs = centaines ; nb de bleus = unités/dizaines. Clignotement bleu = 1 s d\'intervalle.' },
+      { type:'h2', text:'Réactivation / reset WLAN' },
+      { type:'list', items:['Réveil : appui ~1 s sur le bouton LED','Reset WLAN : triple appui (3× 1 s en < 6 s)','Retirer câble LAN pendant config si instable','BMS : jusqu\'à 20 min après BMU']}
+    ],
+    en:[
+      { type:'h2', text:'Be Connect (mobile)' },
+      { type:'list', items:['App ≥ 1.7.4','WLAN "BYDB-Box" — pwd: BYDB-Box','Config, BMU firmware, diagnostics','Problem? Reinstall or change device']},
+      { type:'h2', text:'Be Connect Plus (PC — Windows)' },
+      { type:'list', items:['Windows only','Installer login: BYDB-Box','Read info, config, update BMU+BMS, export logs','Essential for service analysis']},
+      { type:'h2', text:'LED code decoding' },
+      { type:'led-demo', items:[
+        { white:1, blue:3, label:'EC 103' },
+        { white:1, blue:11, label:'EC 111' },
+        { white:3, blue:3, label:'EC 303' }
+      ]},
+      { type:'p', text:'Counting: white blinks = hundreds; blue blinks = units/tens. Blue blink = 1s interval.' },
+      { type:'h2', text:'WLAN reactivation / reset' },
+      { type:'list', items:['Wake: press LED ~1s','WLAN reset: triple press (3× 1s in <6s)','Remove LAN cable during config if unstable','BMS: up to 20 min after BMU']}
+    ],
+    de:[
+      { type:'h2', text:'Be Connect (mobil)' },
+      { type:'list', items:['App ≥ 1.7.4','WLAN "BYDB-Box" — Pwd: BYDB-Box','Konfig, BMU-Firmware, Diagnose','Problem? Neu installieren oder Gerät wechseln']},
+      { type:'h2', text:'Be Connect Plus (PC — Windows)' },
+      { type:'list', items:['Nur Windows','Installer-Login: BYDB-Box','Info lesen, Konfig, Update BMU+BMS, Log-Export','Unverzichtbar für Service-Analyse']},
+      { type:'h2', text:'LED-Code-Dekodierung' },
+      { type:'led-demo', items:[
+        { white:1, blue:3, label:'EC 103' },
+        { white:1, blue:11, label:'EC 111' },
+        { white:3, blue:3, label:'EC 303' }
+      ]},
+      { type:'p', text:'Zählung: weiße Blinks = Hunderter; blaue Blinks = Einer/Zehner. Blau blinkt = 1 s Intervall.' },
+      { type:'h2', text:'WLAN-Reaktivierung / Reset' },
+      { type:'list', items:['Wecken: LED ~1 s drücken','WLAN-Reset: 3× drücken (3× 1 s in <6 s)','LAN-Kabel während Konfig entfernen bei Instabilität','BMS: bis zu 20 min nach BMU']}
+    ]
+  },
+  quiz:[
+    { q:{fr:'Mot de passe WLAN ?',en:'WLAN password?',de:'WLAN-Passwort?'},
+      options:{fr:['admin','BYDB-Box','12345678','byd2024'],en:['admin','BYDB-Box','12345678','byd2024'],de:['admin','BYDB-Box','12345678','byd2024']},
+      answer:1, expl:{fr:'BYDB-Box.',en:'BYDB-Box.',de:'BYDB-Box.'} },
+    { q:{fr:'EC 111 se décode…',en:'EC 111 decodes to…',de:'EC 111 dekodiert zu…'},
+      options:{fr:['3 blancs + 3 bleus','1 blanc + 11 bleus','11 blancs + 1 bleu','2 blancs + 11 bleus'],en:['3 white + 3 blue','1 white + 11 blue','11 white + 1 blue','2 white + 11 blue'],de:['3 weiß + 3 blau','1 weiß + 11 blau','11 weiß + 1 blau','2 weiß + 11 blau']},
+      answer:1, expl:{fr:'1 blanc = centaine 1.',en:'1 white = hundreds 1.',de:'1 weiß = Hunderter 1.'} },
+    { q:{fr:'Durée max MAJ BMS ?',en:'Max BMS update time?',de:'Max. BMS-Update-Zeit?'},
+      options:{fr:['1 min','5 min','20 min','1 h'],en:['1 min','5 min','20 min','1 h'],de:['1 min','5 min','20 min','1 Std']},
+      answer:2, expl:{fr:'Jusqu\'à 20 min.',en:'Up to 20 min.',de:'Bis zu 20 min.'} },
+    { q:{fr:'BCP nécessite…',en:'BCP requires…',de:'BCP benötigt…'},
+      options:{fr:['macOS','Windows','Linux','Android'],en:['macOS','Windows','Linux','Android'],de:['macOS','Windows','Linux','Android']},
+      answer:1, expl:{fr:'Windows uniquement.',en:'Windows only.',de:'Nur Windows.'} },
+    { q:{fr:'Reset WLAN : combien d\'appuis ?',en:'WLAN reset: how many presses?',de:'WLAN-Reset: wie viele Drücke?'},
+      options:{fr:['1','2','3','5'],en:['1','2','3','5'],de:['1','2','3','5']},
+      answer:2, expl:{fr:'Triple appui (3× 1 s en <6 s).',en:'Triple press (3× 1s in <6s).',de:'Dreifach (3× 1 s in <6 s).'} },
+    { q:{fr:'Quel outil pour export logs ?',en:'Which tool to export logs?',de:'Welches Tool für Log-Export?'},
+      options:{fr:['Be Connect','Be Connect Plus','Smartphone','Aucun'],en:['Be Connect','Be Connect Plus','Smartphone','None'],de:['Be Connect','Be Connect Plus','Smartphone','Keins']},
+      answer:1, expl:{fr:'BCP pour export logs détaillés.',en:'BCP for detailed log export.',de:'BCP für detaillierten Log-Export.'} },
+    { q:{fr:'Quel login installer BCP ?',en:'BCP installer login?',de:'BCP-Installer-Login?'},
+      options:{fr:['admin','BYDB-Box','installer','root'],en:['admin','BYDB-Box','installer','root'],de:['admin','BYDB-Box','installer','root']},
+      answer:1, expl:{fr:'Même mdp que WLAN : BYDB-Box.',en:'Same as WLAN: BYDB-Box.',de:'Wie WLAN: BYDB-Box.'} },
+    { q:{fr:'Clignotement démarrage normal : intervalle ?',en:'Normal startup blink: interval?',de:'Normaler Start-Blink: Intervall?'},
+      options:{fr:['0.5 s','1 s','2 s','5 s'],en:['0.5s','1s','2s','5s'],de:['0.5 s','1 s','2 s','5 s']},
+      answer:0, expl:{fr:'0.5 s blanc+bleu pendant ~1 min au démarrage.',en:'0.5s white+blue for ~1min at startup.',de:'0.5 s weiß+blau für ~1 min beim Start.'} },
+    { q:{fr:'Quand le WLAN s\'éteint ?',en:'When does WLAN turn off?',de:'Wann schaltet WLAN ab?'},
+      options:{fr:['1 h','5 h','12 h','Jamais'],en:['1h','5h','12h','Never'],de:['1 Std','5 Std','12 Std','Nie']},
+      answer:1, expl:{fr:'5 h après démarrage.',en:'5h after start.',de:'5 Std nach Start.'} },
+    { q:{fr:'App minimum pour config ?',en:'Min app for config?',de:'Min. App für Konfig?'},
+      options:{fr:['1.0','1.5','1.7.4','2.0'],en:['1.0','1.5','1.7.4','2.0'],de:['1.0','1.5','1.7.4','2.0']},
+      answer:2, expl:{fr:'App > 1.7.4.',en:'App > 1.7.4.',de:'App > 1.7.4.'} }
+  ]
+}
+];
+
+/* ============================================================
+   STORAGE SÉCURISÉ
+   ============================================================ */
+const STORAGE_KEY = 'byd-academy-v2';
+const safeStorage = {
+  get() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { scores:{}, completed:{} }; } catch { return { scores:{}, completed:{} }; } },
+  set(v) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(v)); } catch {} }
+};
+let state = safeStorage.get();
+
+/* ============================================================
+   ÉTAT GLOBAL
+   ============================================================ */
+let lang = (() => { try { return localStorage.getItem('byd-lang') || 'fr'; } catch { return 'fr'; } })();
+let currentModuleId = null;
+let currentTab = 'content';
+let quizState = null;
+let darkMode = (() => { try { return localStorage.getItem('byd-dark') === '1'; } catch { return false; } })();
+
+const t = (key) => I18N[lang][key];
+
+/* ============================================================
+   RENDU CONTENU
+   ============================================================ */
+function renderBlock(b) {
+  switch (b.type) {
+    case 'h2': return `<h3 class="text-xl md:text-2xl font-bold mt-6 mb-3 text-slate-900 dark:text-white">${b.text}</h3>`;
+    case 'p': return `<p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-4">${b.text}</p>`;
+    case 'list': return `<ul class="space-y-2 mb-4">${b.items.map(it => `<li class="flex gap-3 text-slate-700 dark:text-slate-300"><span class="text-byd mt-1">▸</span><span>${it}</span></li>`).join('')}</ul>`;
+    case 'list-numbered': return `<ol class="space-y-2 mb-4">${b.items.map((it,i) => `<li class="flex gap-3 text-slate-700 dark:text-slate-300"><span class="flex-shrink-0 w-6 h-6 rounded-full bg-byd text-white text-xs font-bold flex items-center justify-center">${i+1}</span><span>${it}</span></li>`).join('')}</ol>`;
+    case 'warning': return `<div class="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg mb-4 text-amber-900 dark:text-amber-200 text-sm">${b.text}</div>`;
+    case 'warning-list': return `<div class="bg-rose-50 dark:bg-rose-900/20 border-l-4 border-rose-500 p-4 rounded-r-lg mb-4"><ul class="space-y-1 text-rose-900 dark:text-rose-200 text-sm">${b.items.map(it => `<li>❌ ${it}</li>`).join('')}</ul></div>`;
+    case 'cards': return `<div class="grid md:grid-cols-2 gap-4 mb-4">${b.items.map(c => `<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"><div class="text-3xl mb-2">${c.icon}</div><div class="font-bold text-slate-900 dark:text-white mb-1">${c.title}</div><div class="text-sm text-slate-600 dark:text-slate-400">${c.desc}</div></div>`).join('')}</div>`;
+    case 'checklist': return `<div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 mb-4 space-y-2">${b.items.map(it => `<div class="flex items-start gap-3"><span class="text-byd font-bold">✓</span><span class="text-sm text-slate-700 dark:text-slate-300">${it}</span></div>`).join('')}</div>`;
+    case 'steps': return `<div class="space-y-2 mb-4">${b.items.map(s => `<div class="flex gap-3 items-start p-3 rounded-lg bg-slate-50 dark:bg-slate-900"><div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-byd to-emerald-500 text-white font-bold text-sm flex items-center justify-center">${s.n}</div><div><div class="font-semibold text-slate-900 dark:text-white text-sm">${s.t}</div>${s.d ? `<div class="text-xs text-slate-500 dark:text-slate-400">${s.d}</div>` : ''}</div></div>`).join('')}</div>`;
+    case 'flow': return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">${b.steps.map(s => `<div class="p-4 rounded-xl bg-gradient-to-br from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700 text-center"><div class="text-3xl mb-1">${s.icon}</div><div class="font-bold text-sm text-slate-900 dark:text-white">${s.title}</div><div class="text-xs text-slate-500 dark:text-slate-400 mt-1">${s.desc}</div></div>`).join('')}</div>`;
+    case 'table': return `<div class="overflow-x-auto mb-4 rounded-xl border border-slate-200 dark:border-slate-700"><table class="w-full text-sm"><thead class="bg-slate-100 dark:bg-slate-800"><tr>${b.headers.map(h => `<th class="px-4 py-3 text-left font-bold text-slate-900 dark:text-white">${h}</th>`).join('')}</tr></thead><tbody>${b.rows.map(r => `<tr class="border-t border-slate-200 dark:border-slate-700">${r.map(c => `<td class="px-4 py-3 text-slate-700 dark:text-slate-300">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    case 'decision': return `<div class="space-y-3 mb-4">${b.items.map(d => `<details class="group rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden"><summary class="cursor-pointer p-4 font-semibold text-slate-900 dark:text-white flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800"><span>🔍 ${d.title}</span><span class="text-byd transition-transform group-open:rotate-180">▼</span></summary><ol class="px-4 pb-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">${d.steps.map((s,j) => `<li class="flex gap-2"><span class="text-byd font-bold">${j+1}.</span><span>${s}</span></li>`).join('')}</ol></details>`).join('')}</div>`;
+    case 'ec-table': return `<div class="space-y-3 mb-4">${b.items.map(e => `<details class="group rounded-xl border-2 ${e.severity==='high' ? 'border-rose-300 dark:border-rose-800' : 'border-amber-300 dark:border-amber-800'} bg-white dark:bg-slate-900 overflow-hidden"><summary class="cursor-pointer p-4 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-800"><span class="flex-shrink-0 px-2.5 py-1 rounded font-mono font-bold text-sm ${e.severity==='high' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'}">EC ${e.code}</span><span class="flex-1 text-sm font-semibold text-slate-900 dark:text-white">${e.sig}</span><span class="text-byd transition-transform group-open:rotate-180">▼</span></summary><div class="px-4 pb-4 pt-2 border-t border-slate-200 dark:border-slate-700"><div class="text-xs font-bold text-byd uppercase mb-1">${t('action_label')}</div><div class="text-sm text-slate-700 dark:text-slate-300">${e.action}</div></div></details>`).join('')}</div>`;
+    case 'led-demo': return `<div class="grid md:grid-cols-3 gap-4 mb-4">${b.items.map(d => {
+      const whites = Array.from({length:d.white}).map((_,k) => `<span class="w-3 h-3 rounded-full bg-white border-2 border-slate-300 led-blink" style="animation-delay:${k*0.5}s"></span>`).join('');
+      const blues = Array.from({length:d.blue}).map((_,k) => `<span class="w-3 h-3 rounded-full bg-blue-500 led-blink" style="animation-delay:${d.white*0.5+k*0.5}s"></span>`).join('');
+      return `<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-center"><div class="flex justify-center gap-2 mb-2 h-6 items-center flex-wrap">${whites}${blues}</div><div class="font-mono font-bold text-byd-dark dark:text-byd">${d.label}</div><div class="text-xs text-slate-500 mt-1">${d.white}W + ${d.blue}B</div></div>`;
+    }).join('')}</div>`;
+    default: return '';
+  }
+}
+
+/* ============================================================
+   HOME
+   ============================================================ */
+function renderHome() {
+  const total = MODULES.reduce((s,m) => s + m.quiz.length, 0);
+  const answered = Object.values(state.scores).reduce((s,v) => s + v.total, 0);
+  const correct = Object.values(state.scores).reduce((s,v) => s + v.score, 0);
+  const modulesDone = Object.values(state.completed).filter(Boolean).length;
+  const pct = Math.round((modulesDone / MODULES.length) * 100);
+  const allValidated = modulesDone === MODULES.length;
+
+  const modulesHtml = MODULES.map((m,i) => {
+    const done = state.completed[m.id];
+    const score = state.scores[m.id];
+    return `<button data-action="open" data-id="${m.id}" class="group text-left bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 hover:border-byd hover:shadow-xl transition-all">
+      <div class="flex items-start gap-4">
+        <div class="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center text-2xl shadow-lg">${m.icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-xs font-mono text-slate-400">0${i+1}</span>
+            ${done ? `<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">${t('validated')}</span>` : ''}
+            ${score && !done ? `<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">${score.score}/${score.total}</span>` : ''}
+          </div>
+          <h3 class="font-bold text-slate-900 dark:text-white group-hover:text-byd transition">${m.title[lang]}</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400">${m.subtitle[lang]}</p>
+          <p class="text-xs text-slate-400 mt-1">${m.quiz.length} QCM</p>
+        </div>
+        <div class="text-slate-300 group-hover:text-byd transition text-xl">→</div>
+      </div>
+    </button>`;
+  }).join('');
+
+  return `<div class="fade-in">
+    <div class="relative overflow-hidden rounded-3xl p-8 md:p-12 mb-8 bg-gradient-to-br from-slate-900 via-slate-800 to-byd-dark text-white shadow-2xl">
+      <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-byd/20 blur-3xl"></div>
+      <div class="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-emerald-400/20 blur-3xl"></div>
+      <div class="relative">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center text-2xl">🔋</div>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-400/20 text-emerald-300">HVS · HVM</span>
+        </div>
+        <h1 class="text-3xl md:text-5xl font-extrabold leading-tight mb-3">${t('hero_title')}</h1>
+        <p class="text-slate-300 max-w-2xl text-sm md:text-base">${t('hero_desc')}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      ${[
+        { label:t('stat_validated'), value:`${modulesDone}/${MODULES.length}`, icon:'✅' },
+        { label:t('stat_progress'), value:`${pct}%`, icon:'📊' },
+        { label:t('stat_questions'), value:`${answered}/${total}`, icon:'✍️' },
+        { label:t('stat_correct'), value:`${correct}`, icon:'🏆' }
+      ].map(s => `<div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div class="text-2xl mb-1">${s.icon}</div><div class="text-2xl font-extrabold text-slate-900 dark:text-white">${s.value}</div><div class="text-xs text-slate-500">${s.label}</div></div>`).join('')}
+    </div>
+
+    ${allValidated ? `<div class="mb-8 p-6 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-900 shadow-lg"><div class="flex items-center gap-3"><div class="text-4xl">🏅</div><div><div class="font-extrabold text-lg">${t('certified')}</div><div class="text-sm">${t('certified_desc')}</div></div></div></div>` : ''}
+
+    <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-white">${t('modules_title')}</h2>
+    <div class="grid md:grid-cols-2 gap-4">${modulesHtml}</div>
+
+    <div class="mt-8 flex justify-end">
+      <button data-action="reset" class="text-xs text-slate-400 hover:text-rose-500 transition">${t('reset')}</button>
+    </div>
+
+    <div class="mt-6 p-4 rounded-xl bg-slate-100 dark:bg-slate-900 text-xs text-slate-500 dark:text-slate-400">${t('disclaimer')}</div>
+  </div>`;
+}
+
+/* ============================================================
+   MODULE
+   ============================================================ */
+function renderModule(m) {
+  const score = state.scores[m.id];
+  const contentHtml = m.content[lang].map(renderBlock).join('');
+  const tabs = `
+    <div class="flex gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl w-fit">
+      <button data-action="tab" data-tab="content" class="px-4 py-2 rounded-lg text-sm font-semibold transition ${currentTab==='content' ? 'bg-white dark:bg-slate-800 shadow text-byd' : 'text-slate-500'}">${t('tab_course')}</button>
+      <button data-action="tab" data-tab="quiz" class="px-4 py-2 rounded-lg text-sm font-semibold transition ${currentTab==='quiz' ? 'bg-white dark:bg-slate-800 shadow text-byd' : 'text-slate-500'}">${t('tab_quiz')} (${m.quiz.length})</button>
+    </div>`;
+
+  const body = currentTab === 'content'
+    ? `<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700">${contentHtml}<div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end"><button data-action="tab" data-tab="quiz" class="px-6 py-2.5 rounded-lg bg-byd text-white font-semibold hover:bg-byd-dark transition">${t('go_quiz')}</button></div></div>`
+    : renderQuiz(m, score);
+
+  return `<div class="fade-in">
+    <button data-action="home" class="mb-4 text-sm font-semibold text-slate-500 hover:text-byd flex items-center gap-2">${t('back_home')}</button>
+    <div class="rounded-2xl p-6 md:p-8 mb-6 bg-gradient-to-br ${m.color} text-white shadow-xl">
+      <div class="text-5xl mb-3">${m.icon}</div>
+      <h1 class="text-2xl md:text-3xl font-extrabold mb-1">${m.title[lang]}</h1>
+      <p class="opacity-90">${m.subtitle[lang]}</p>
+    </div>
+    ${tabs}
+    ${body}
+  </div>`;
+}
+
+/* ============================================================
+   QUIZ
+   ============================================================ */
+function renderQuiz(m, existing) {
+  if (!quizState) quizState = { current:0, answers:[], selected:null, revealed:false, finished:false };
+  const qs = quizState;
+  const total = m.quiz.length;
+
+  if (qs.finished) {
+    const score = qs.answers.filter(a => a.correct).length;
+    const pct = Math.round((score/total)*100);
+    const pass = pct >= 80;
+    return `<div class="fade-in bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 shadow-lg text-center">
+      <div class="text-6xl mb-4">${pass ? '🏆' : '📚'}</div>
+      <h3 class="text-2xl font-bold mb-2">${pass ? t('congrats') : t('almost')}</h3>
+      <p class="text-slate-600 dark:text-slate-400 mb-4">${t('score')} : <span class="font-bold text-byd text-xl">${score}/${total}</span> (${pct} %)</p>
+      <div class="max-w-xs mx-auto mb-6"><div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-byd to-emerald-400" style="width:${pct}%"></div></div></div>
+      <p class="text-sm text-slate-500 mb-6">${pass ? t('module_ok') : t('need80')}</p>
+      <div class="flex flex-wrap gap-3 justify-center">
+        <button data-action="restart-quiz" class="px-6 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition">${t('restart')}</button>
+        <button data-action="home" class="px-6 py-2.5 rounded-lg bg-byd text-white font-semibold hover:bg-byd-dark transition">${t('finish')}</button>
+      </div>
+    </div>`;
+  }
+
+  const q = m.quiz[qs.current];
+  const options = q.options[lang] || q.options.fr;
+  const questionText = q.q[lang] || q.q.fr;
+  const explanation = q.expl[lang] || q.expl.fr;
+
+  const opts = options.map((opt,i) => {
+    let cls = 'border-slate-200 dark:border-slate-700 hover:border-byd';
+    if (qs.revealed) {
+      if (i === q.answer) cls = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30';
+      else if (i === qs.selected) cls = 'border-rose-500 bg-rose-50 dark:bg-rose-900/30';
+      else cls = 'border-slate-200 dark:border-slate-700 opacity-60';
+    } else if (qs.selected === i) cls = 'border-byd bg-byd-light dark:bg-byd/20';
+    const letter = String.fromCharCode(65+i);
+    return `<button data-action="select" data-idx="${i}" ${qs.revealed ? 'disabled' : ''} class="w-full text-left p-4 rounded-xl border-2 transition-all ${cls}">
+      <div class="flex items-center gap-3">
+        <span class="flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs font-bold ${qs.selected === i ? 'border-byd bg-byd text-white' : 'border-slate-300 dark:border-slate-600'}">${letter}</span>
+        <span class="text-sm md:text-base">${opt}</span>
+      </div>
+    </button>`;
+  }).join('');
+
+  const feedback = qs.revealed ? `<div class="p-4 rounded-xl mb-4 text-sm ${qs.selected === q.answer ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-200' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200'}">
+    <div class="font-bold mb-1">${qs.selected === q.answer ? t('good_answer') : `${t('correct_answer')} : ${String.fromCharCode(65+q.answer)}`}</div>
+    <div>${explanation}</div>
+  </div>` : '';
+
+  return `<div class="fade-in bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 shadow-lg">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-byd/10 text-byd-dark dark:bg-byd/20 dark:text-byd">${t('question')} ${qs.current+1} / ${total}</span>
+      ${existing ? `<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300">${t('last_score')} : ${existing.score}/${existing.total}</span>` : ''}
+    </div>
+    <div class="mb-4"><div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-byd to-emerald-400 transition-all duration-500" style="width:${(qs.current/total)*100}%"></div></div></div>
+    <h3 class="text-lg md:text-xl font-bold mb-6 text-slate-900 dark:text-white">${questionText}</h3>
+    <div class="space-y-3 mb-6">${opts}</div>
+    ${feedback}
+    <div class="flex justify-end gap-3">
+      ${!qs.revealed
+        ? `<button data-action="validate" ${qs.selected === null ? 'disabled' : ''} class="px-6 py-2.5 rounded-lg bg-byd text-white font-semibold hover:bg-byd-dark disabled:opacity-40 disabled:cursor-not-allowed transition">${t('validate')}</button>`
+        : `<button data-action="next" class="px-6 py-2.5 rounded-lg bg-byd text-white font-semibold hover:bg-byd-dark transition">${qs.current+1 < total ? t('next') : t('see_result')}</button>`}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   ROUTER + NAVBAR
+   ============================================================ */
+function render() {
+  document.documentElement.classList.toggle('dark', darkMode);
+  document.documentElement.lang = lang;
+  const app = document.getElementById('app');
+  const main = currentModuleId ? renderModule(MODULES.find(m => m.id === currentModuleId)) : renderHome();
+  const langs = [{code:'fr',label:'FR'},{code:'en',label:'EN'},{code:'de',label:'DE'}];
+  const langBtns = langs.map(l => `<button data-action="lang" data-lang="${l.code}" class="px-2.5 py-1 rounded-md text-xs font-bold transition ${lang===l.code ? 'lang-active' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}">${l.label}</button>`).join('');
+
+  app.innerHTML = `
+    <div class="min-h-screen">
+      <header class="sticky top-0 z-40 backdrop-blur-md bg-white/75 dark:bg-slate-900/75 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <button data-action="home" class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-byd to-emerald-600 flex items-center justify-center text-white font-bold text-sm">BYD</div>
+            <div class="text-left">
+              <div class="font-extrabold text-sm text-slate-900 dark:text-white leading-tight">Battery-Box Academy</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">${t('tagline')}</div>
+            </div>
+          </button>
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">${langBtns}</div>
+            <button data-action="toggle-dark" class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition" aria-label="Theme">${darkMode ? '☀️' : '🌙'}</button>
+          </div>
+        </div>
+      </header>
+      <main class="max-w-5xl mx-auto px-4 py-6 md:py-10">${main}</main>
+      <footer class="max-w-5xl mx-auto px-4 py-8 text-center text-xs text-slate-400">BYD Battery-Box Academy · ${t('footer')}</footer>
+    </div>`;
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+
+  if (action === 'open') {
+    currentModuleId = btn.dataset.id; currentTab = 'content'; quizState = null;
+    render(); window.scrollTo({ top:0, behavior:'smooth' });
+  } else if (action === 'home') {
+    currentModuleId = null; quizState = null;
+    render(); window.scrollTo({ top:0, behavior:'smooth' });
+  } else if (action === 'tab') {
+    currentTab = btn.dataset.tab;
+    if (currentTab === 'quiz') quizState = null;
+    render();
+  } else if (action === 'lang') {
+    lang = btn.dataset.lang;
+    try { localStorage.setItem('byd-lang', lang); } catch {}
+    quizState = null;
+    render();
+  } else if (action === 'toggle-dark') {
+    darkMode = !darkMode;
+    try { localStorage.setItem('byd-dark', darkMode ? '1' : '0'); } catch {}
+    render();
+  } else if (action === 'reset') {
+    if (confirm(t('reset_confirm'))) {
+      state = { scores:{}, completed:{} };
+      safeStorage.set(state); render();
+    }
+  } else if (action === 'select') {
+    if (quizState && !quizState.revealed) {
+      quizState.selected = parseInt(btn.dataset.idx, 10); render();
+    }
+  } else if (action === 'validate') {
+    if (!quizState || quizState.selected === null) return;
+    const m = MODULES.find(x => x.id === currentModuleId);
+    const q = m.quiz[quizState.current];
+    quizState.revealed = true;
+    quizState.answers.push({ selected: quizState.selected, correct: quizState.selected === q.answer });
+    render();
+  } else if (action === 'next') {
+    const m = MODULES.find(x => x.id === currentModuleId);
+    const total = m.quiz.length;
+    if (quizState.current + 1 < total) {
+      quizState.current++; quizState.selected = null; quizState.revealed = false; render();
+    } else {
+      quizState.finished = true;
+      const score = quizState.answers.filter(a => a.correct).length;
+      state.scores[m.id] = { score, total };
+      state.completed[m.id] = (score/total) >= 0.8;
+      safeStorage.set(state); render();
+    }
+  } else if (action === 'restart-quiz') {
+    quizState = null; render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
